@@ -1,0 +1,26 @@
+# Node / backend
+node_modules/
+dist/
+.env
+.env.local
+npm-debug.log*
+
+# Expo
+.expo/
+
+# React Native / Android
+android/app/build/
+android/.gradle/
+android/local.properties
+*.keystore
+*.jks
+ios/Pods/
+ios/build/
+*.hprof
+.cxx/
+
+# Editor / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
