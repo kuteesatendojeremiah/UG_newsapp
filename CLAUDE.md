@@ -1,6 +1,6 @@
 # Uganda News App
 
-A CNN-style news app for a Ugandan audience. Content is aggregated from Ugandan
+A news app for a Ugandan audience. Content is aggregated from Ugandan
 news outlets' RSS feeds (with scraping as a fallback), not authored in-house.
 
 ## Repo layout (monorepo)
@@ -80,7 +80,7 @@ Claude Code scan it and refresh this section.
   inflected forms (e.g. "storms", "MPs") no longer match "storm"/"mp" — no stemming is done,
   so recall on inflected forms is intentionally sacrificed for precision. Revisit if that
   turns out to matter in practice.
-- Article clustering (grouping similar stories from multiple outlets, CNN-style): implemented
+- Article clustering (grouping similar stories from multiple outlets): implemented
   in `backend/src/jobs/clusterArticles.ts` — Jaccard word-overlap similarity on title+summary
   (`services/clustering.ts`, no ML/embeddings dependency), writes `Article.cluster_id`,
   watermarked via `JobState` like the trending job, chained after each ingest run in
