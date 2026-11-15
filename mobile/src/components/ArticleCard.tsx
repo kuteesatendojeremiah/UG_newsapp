@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
-import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import { Article } from '@/api/types';
 import { trackImpression, trackClick } from '@/api/endpoints';
@@ -40,11 +41,17 @@ export function ArticleCard({ article }: { article: Article }) {
 
   return (
     <Pressable onPress={handlePress} style={styles.card}>
+      {/* No image → no empty block. Cards without one just start at the text. */}
       {article.image_url ? (
-        <Image source={{ uri: article.image_url }} style={[styles.image, { backgroundColor: colors.backgroundElement }]} />
-      ) : (
-        <View style={[styles.image, styles.imagePlaceholder, { backgroundColor: colors.backgroundElement }]} />
-      )}
+        <Image
+          source={{ uri: article.image_url }}
+          style={[styles.image, { backgroundColor: colors.backgroundElement }]}
+          contentFit="cover"
+          transition={150}
+          cachePolicy="memory-disk"
+          recyclingKey={article.id}
+        />
+      ) : null}
       <View style={styles.body}>
         <View style={styles.badgeRow}>
           <Text style={[styles.badge, { color: colors.textSecondary }]}>
@@ -73,10 +80,6 @@ const styles = StyleSheet.create({
     width: '100%',
     height: 180,
     borderRadius: Spacing.two,
-  },
-  imagePlaceholder: {
-    alignItems: 'center',
-    justifyContent: 'center',
   },
   body: {
     paddingTop: Spacing.two,

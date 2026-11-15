@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, Image, Pressable, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Image } from 'expo-image';
 import { WebView } from 'react-native-webview';
 import * as WebBrowser from 'expo-web-browser';
 import { useLocalSearchParams } from 'expo-router';
@@ -77,7 +78,7 @@ export default function ArticleDetailScreen() {
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       {article.image_url ? (
-        <Image source={{ uri: article.image_url }} style={styles.hero} />
+        <Image source={{ uri: article.image_url }} style={styles.hero} contentFit="cover" transition={150} cachePolicy="memory-disk" />
       ) : null}
       <View style={styles.body}>
         <Text style={[styles.badge, { color: colors.textSecondary }]}>

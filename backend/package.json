@@ -11,6 +11,7 @@
     "trending": "ts-node --transpile-only src/scripts/runTrendingOnce.ts",
     "cluster": "ts-node --transpile-only src/scripts/runClusterOnce.ts",
     "backfill-region": "ts-node --transpile-only src/scripts/backfillRegion.ts",
+    "backfill-images": "ts-node --transpile-only src/scripts/backfillImages.ts",
     "sync-indexes": "ts-node --transpile-only src/scripts/syncIndexes.ts"
   },
   "dependencies": {

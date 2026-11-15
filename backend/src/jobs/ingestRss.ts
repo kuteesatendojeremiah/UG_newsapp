@@ -2,10 +2,13 @@ import Parser from "rss-parser";
 import Article from "../models/Article";
 import { RSS_SOURCES, RssSource } from "../config/sources";
 import { categorize } from "../services/categorize";
+import { fetchOgImage, firstImageInHtml, mapWithConcurrency } from "../services/articleImage";
 
 interface CustomItem {
   mediaContent?: { $: { url?: string } }[];
   mediaGroup?: { "media:content"?: { $: { url?: string } } };
+  mediaThumb?: { $: { url?: string } }[];
+  contentEncoded?: string;
 }
 
 // A browser User-Agent is required — monitor.co.ug (403) and ntv.co.ug (406) both reject
@@ -22,6 +25,8 @@ const parser = new Parser<Record<string, unknown>, CustomItem>({
     item: [
       ["media:content", "mediaContent", { keepArray: true }],
       ["media:group", "mediaGroup"],
+      ["media:thumbnail", "mediaThumb", { keepArray: true }], // BBC
+      ["content:encoded", "contentEncoded"],
     ],
   },
 });
@@ -66,8 +71,16 @@ function extractImage(item: Parser.Item & CustomItem): string | null {
   const groupUrl = item.mediaGroup?.["media:content"]?.$?.url;
   if (groupUrl) return groupUrl;
 
-  return null;
+  // BBC puts its image in <media:thumbnail>.
+  const thumbUrl = item.mediaThumb?.[0]?.$?.url;
+  if (thumbUrl) return thumbUrl;
+
+  // The Verge (Atom) only embeds the image as an <img> inside the entry body.
+  return firstImageInHtml(item.contentEncoded) ?? firstImageInHtml(item.content);
 }
+
+// How many article pages to fetch at once when falling back to og:image.
+const OG_FETCH_CONCURRENCY = 4;
 
 interface IngestResult {
   source: string;
@@ -97,6 +110,7 @@ async function ingestSource(source: RssSource): Promise<IngestResult> {
   // up to a real, measurable delay. One bulk request per source keeps this fast regardless
   // of feed size, and network latency to the cluster is no longer per-article.
   const operations = [];
+  const imageless: { link: string; fields: Record<string, unknown> }[] = [];
 
   for (const item of feed.items) {
     if (!item.link || !item.title) {
@@ -143,38 +157,58 @@ async function ingestSource(source: RssSource): Promise<IngestResult> {
       .join(" ");
     const { categories, primary } = categorize(classifyText);
 
+    const feedImage = extractImage(item);
+
     // Upsert on `url` (unique index on Article) — repeated cron runs re-fetch the same
     // feed items, and $setOnInsert means an existing article is never overwritten/duplicated.
+    const insertFields: Record<string, unknown> = {
+      title: item.title,
+      summary: summary || item.title,
+      image_url: feedImage ?? undefined,
+      source: source.name,
+      url: item.link,
+      published_at: publishedAt,
+      categories,
+      primary_category: primary,
+      region: source.region,
+      // "local" only makes sense for Uganda-sourced items — no other controlled tag
+      // value exists yet for regional/global content (see constants/categories.ts).
+      tags: source.region === "uganda" ? ["local"] : [],
+      clicks: 0,
+      impressions: 0,
+      trending_score: 0,
+      created_at: new Date(),
+    };
+
     operations.push({
       updateOne: {
         filter: { url: item.link },
-        update: {
-          $setOnInsert: {
-            title: item.title,
-            summary: summary || item.title,
-            image_url: extractImage(item) ?? undefined,
-            source: source.name,
-            url: item.link,
-            published_at: publishedAt,
-            categories,
-            primary_category: primary,
-            region: source.region,
-            // "local" only makes sense for Uganda-sourced items — no other controlled tag
-            // value exists yet for regional/global content (see constants/categories.ts).
-            tags: source.region === "uganda" ? ["local"] : [],
-            clicks: 0,
-            impressions: 0,
-            trending_score: 0,
-            created_at: new Date(),
-          },
-        },
+        update: { $setOnInsert: insertFields },
         upsert: true,
       },
     });
+
+    if (!feedImage) imageless.push({ link: item.link, fields: insertFields });
   }
 
   if (operations.length === 0) {
     return { source: source.name, inserted: 0, skipped, failed: false };
+  }
+
+  // Feed carried no image (Al Jazeera, TechCrunch, NTV...) — fall back to the article
+  // page's og:image. Only for URLs not already stored: ingest runs every 15 minutes, and
+  // re-fetching every image-less page on every run would hammer the outlets for nothing.
+  if (imageless.length > 0) {
+    const existing = new Set(
+      (await Article.find({ url: { $in: imageless.map((i) => i.link) } }, { url: 1 }).lean()).map(
+        (a) => a.url
+      )
+    );
+    const fresh = imageless.filter((i) => !existing.has(i.link));
+    await mapWithConcurrency(fresh, OG_FETCH_CONCURRENCY, async (entry) => {
+      const image = await fetchOgImage(entry.link);
+      if (image) entry.fields.image_url = image;
+    });
   }
 
   const result = await Article.bulkWrite(operations, { ordered: false });
