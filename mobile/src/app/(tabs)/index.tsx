@@ -137,9 +137,9 @@ export default function HomeScreen() {
                   )}
                 />
               </View>
-            ) : null
+            ) : undefined
           }
-          ListFooterComponent={loadingMore ? <ActivityIndicator style={styles.footerLoader} /> : null}
+          ListFooterComponent={loadingMore ? <ActivityIndicator style={styles.footerLoader} /> : undefined}
         />
       )}
     </View>

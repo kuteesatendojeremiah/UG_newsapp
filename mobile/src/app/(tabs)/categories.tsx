@@ -176,7 +176,7 @@ export default function CategoriesScreen() {
           ListEmptyComponent={
             <Text style={[styles.empty, { color: colors.textSecondary }]}>No recent articles found.</Text>
           }
-          ListFooterComponent={loadingMore ? <ActivityIndicator style={styles.footerLoader} /> : null}
+          ListFooterComponent={loadingMore ? <ActivityIndicator style={styles.footerLoader} /> : undefined}
         />
       )}
     </View>

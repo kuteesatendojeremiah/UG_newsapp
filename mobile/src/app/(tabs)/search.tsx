@@ -96,7 +96,7 @@ export default function SearchScreen() {
               No articles found for “{submittedQuery}”.
             </Text>
           }
-          ListFooterComponent={loadingMore ? <ActivityIndicator style={styles.footerLoader} /> : null}
+          ListFooterComponent={loadingMore ? <ActivityIndicator style={styles.footerLoader} /> : undefined}
         />
       ) : (
         <Text style={[styles.hint, { color: colors.textSecondary }]}>
