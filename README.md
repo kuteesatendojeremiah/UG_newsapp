@@ -4,11 +4,21 @@ A news app for a Ugandan audience. Content is aggregated from Ugandan, East
 African, and global RSS feeds — not authored in-house — then categorized, ranked, and
 clustered automatically. No user accounts; personalization is device-local.
 
+## Download (Android)
+
+**[Download the Android APK](https://expo.dev/artifacts/eas/Wdd2K-rIMBHyT0IN74SjVBgaJIwVa9q_zA9oc-KHhS4.apk)**
+— a standalone build of the app (Expo SDK 58) that loads its feed from the live backend.
+Open the link on an Android phone, allow installs from your browser when prompted, and
+open **Uganda News**. No Expo Go or dev server needed.
+
+> This is a preview build hosted by Expo (EAS); the link may expire after a while, and
+> Android will warn that it's from an unknown source because it isn't on the Play Store.
+
 ## Repo layout
 
 ```
 backend/   Node.js + Express API (TypeScript), MongoDB (Atlas), RSS ingestion + jobs
-mobile/    React Native app (Expo Router, SDK 54)
+mobile/    React Native app (Expo Router, SDK 58)
 docs/      Architecture notes, product design, RSS source list
 ```
 
