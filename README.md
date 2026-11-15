@@ -6,13 +6,13 @@ clustered automatically. No user accounts; personalization is device-local.
 
 ## Download (Android)
 
-**[Download the Android APK](https://expo.dev/artifacts/eas/Wdd2K-rIMBHyT0IN74SjVBgaJIwVa9q_zA9oc-KHhS4.apk)**
+**[Download the Android APK (v1.0.0)](https://github.com/kuteesatendojeremiah/UG_newsapp/releases/download/v1.0.0/uganda-news-v1.0.0.apk)**
 — a standalone build of the app (Expo SDK 58) that loads its feed from the live backend.
 Open the link on an Android phone, allow installs from your browser when prompted, and
-open **Uganda News**. No Expo Go or dev server needed.
+open **Uganda News**. No Expo Go or dev server needed. All versions are on the
+[Releases page](https://github.com/kuteesatendojeremiah/UG_newsapp/releases).
 
-> This is a preview build hosted by Expo (EAS); the link may expire after a while, and
-> Android will warn that it's from an unknown source because it isn't on the Play Store.
+> Android will warn that it's from an unknown source because the app isn't on the Play Store.
 
 ## Repo layout
 
