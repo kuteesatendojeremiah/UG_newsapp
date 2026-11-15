@@ -11,25 +11,33 @@ interface CustomItem {
   contentEncoded?: string;
 }
 
+const BROWSER_UA =
+  "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0 Safari/537.36";
+
 // A browser User-Agent is required — monitor.co.ug (403) and ntv.co.ug (406) both reject
 // curl/bot-style default UAs, confirmed when verifying these feeds directly.
-const parser = new Parser<Record<string, unknown>, CustomItem>({
-  headers: {
-    "User-Agent":
-      "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0 Safari/537.36",
-  },
-  // rss-parser has no default timeout — a single hanging source would otherwise block
-  // the whole ingestion run (and, on the cron schedule, every run after it) indefinitely.
-  timeout: 15000,
-  customFields: {
-    item: [
-      ["media:content", "mediaContent", { keepArray: true }],
-      ["media:group", "mediaGroup"],
-      ["media:thumbnail", "mediaThumb", { keepArray: true }], // BBC
-      ["content:encoded", "contentEncoded"],
-    ],
-  },
-});
+function createParser(extraHeaders: Record<string, string> = {}) {
+  return new Parser<Record<string, unknown>, CustomItem>({
+    headers: { "User-Agent": BROWSER_UA, ...extraHeaders },
+    // rss-parser has no default timeout — a single hanging source would otherwise block
+    // the whole ingestion run (and, on the cron schedule, every run after it) indefinitely.
+    timeout: 15000,
+    customFields: {
+      item: [
+        ["media:content", "mediaContent", { keepArray: true }],
+        ["media:group", "mediaGroup"],
+        ["media:thumbnail", "mediaThumb", { keepArray: true }], // BBC
+        ["content:encoded", "contentEncoded"],
+      ],
+    },
+  });
+}
+
+const parser = createParser();
+// rss-parser's default Accept header asks for XML, and monitor.co.ug answers that with a 404
+// (verified 2026-11-15: identical URL returns the real feed with Accept: */*). Sources
+// flagged acceptAny use this parser instead.
+const acceptAnyParser = createParser({ Accept: "*/*" });
 
 // Some feeds (Sky Sports, confirmed directly) emit RFC-822 dates with a named timezone
 // abbreviation ("...21:30:00 BST") that JS's Date constructor can't parse in this runtime —
@@ -97,7 +105,10 @@ const MAX_ARTICLE_AGE_MS = 1000 * 60 * 60 * 48; // 48 hours
 async function ingestSource(source: RssSource): Promise<IngestResult> {
   let feed;
   try {
-    feed = await parser.parseURL(source.feedUrl);
+    const feedUrl = source.cacheBust
+      ? `${source.feedUrl}${source.feedUrl.includes("?") ? "&" : "?"}_=${Date.now()}`
+      : source.feedUrl;
+    feed = await (source.acceptAny ? acceptAnyParser : parser).parseURL(feedUrl);
   } catch (err) {
     console.error(`[ingest] Failed to fetch ${source.name}:`, (err as Error).message);
     return { source: source.name, inserted: 0, skipped: 0, failed: true };

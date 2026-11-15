@@ -57,15 +57,21 @@ Claude Code scan it and refresh this section.
   abbreviation swapped for a numeric offset before giving up. If a newly added source shows
   suspiciously 100% `skipped` on its very first ingest ever (no prior data to dedupe against),
   check this before assuming the source itself is bad.
-- **Daily Monitor and NTV Uganda feeds have gone stale (as of 2026-07-23):** both feeds
-  fetch and parse fine (no error), but their newest items are ~3-4 weeks old — everything
-  gets filtered out by ingestRss.ts's 48h freshness cutoff, so only Nile Post is actually
-  landing articles right now. Confirmed this is outlet-side, not a feed-URL or ingestion
-  bug: NTV's own article page (`article:published_time` meta tag) shows the same ~4-week-old
-  date as its feed, so the live site isn't ahead of the feed either. Building a Cheerio
-  scraper for either outlet won't help until they resume publishing — there's no fresher
-  content to scrape. Recheck monitor.co.ug / ntv.co.ug periodically for signs of life
-  before investing more ingestion work here.
+- **Daily Monitor feed fixed (2026-11-15):** `monitor.co.ug/rss.xml` started returning 404
+  (the homepage still advertises that exact URL). Two separate quirks, both worked around
+  per-source in `sources.ts`/`ingestRss.ts`: (1) the site 404s when the request's `Accept`
+  header asks for XML (rss-parser's default) but serves the feed for `Accept: */*` →
+  `acceptAny: true`; (2) the bare path also returns a stuck 404 from its CDN, while any
+  query-stringed variant works → `cacheBust: true` appends `?_=<timestamp>`. Verified 6/6
+  fetches, 40 items, all fresh with images. If it breaks again, test with curl (which sends
+  `Accept: */*`) vs. rss-parser to tell which quirk regressed.
+- **NTV Uganda feed has gone stale (as of 2026-07-23):** the feed fetches and parses fine
+  (no error), but its newest items are ~3-4 weeks old — everything gets filtered out by
+  ingestRss.ts's 48h freshness cutoff. Confirmed this is outlet-side, not a feed-URL or
+  ingestion bug: NTV's own article page (`article:published_time` meta tag) shows the same
+  ~4-week-old date as its feed, so the live site isn't ahead of the feed either. Building a
+  Cheerio scraper won't help until they resume publishing — there's no fresher content to
+  scrape. Recheck ntv.co.ug periodically for signs of life before investing more work here.
 - Ingestion cadence: every 15 minutes, via `node-cron` in `backend/src/jobs/scheduler.ts`.
 - Category assignment: deterministic keyword scan (`backend/src/services/categorize.ts`),
   no ML — matches title/summary/URL-path text against a fixed keyword list per category,

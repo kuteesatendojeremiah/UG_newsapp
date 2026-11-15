@@ -4,6 +4,13 @@ export interface RssSource {
   name: string; // becomes Article.source
   feedUrl: string;
   region: Region;
+  // Append a throwaway query param on every fetch. Needed for monitor.co.ug: its CDN
+  // answers the bare /rss.xml path with a 404 (2026-11-15) while ANY query-stringed variant
+  // (/rss.xml?_=123) returns the real, fresh feed. Looks like a bad cached 404 on the exact path.
+  cacheBust?: boolean;
+  // Send `Accept: */*` instead of rss-parser's XML-specific default. monitor.co.ug returns a 404
+  // for the XML Accept header (2026-11-15) but serves the feed fine for */*.
+  acceptAny?: boolean;
 }
 
 // Verified working 2026-07-22 by fetching each URL directly (a browser User-Agent was
@@ -20,7 +27,7 @@ export interface RssSource {
 // dead), ESPN (connection reset even with the same browser UA every other source accepts).
 // See CLAUDE.md for the full note.
 export const RSS_SOURCES: RssSource[] = [
-  { name: "Daily Monitor", feedUrl: "https://www.monitor.co.ug/rss.xml", region: "uganda" },
+  { name: "Daily Monitor", feedUrl: "https://www.monitor.co.ug/rss.xml", region: "uganda", cacheBust: true, acceptAny: true },
   { name: "NTV Uganda", feedUrl: "https://www.ntv.co.ug/rss", region: "uganda" },
   { name: "Nile Post", feedUrl: "https://nilepost.co.ug/feed/", region: "uganda" },
 
